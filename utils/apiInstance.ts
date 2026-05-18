@@ -11,21 +11,23 @@ const API_CONFIG = {
   }
 } as const;
 
-interface FetchPostsParams {
-  page?: number;
-  tags?: string;
-  limit?: number;
-}
-
 export async function fetchPosts(
   page: number = 0, 
   tags: string = ''
 ): Promise<ApiResponse> {
-  const params = new URLSearchParams({
-    ...API_CONFIG.defaultParams,
-    pid: page.toString(),
-    ...(tags && { tags })
-  });
+  const params = new URLSearchParams();
+  
+  // Добавляем все параметры
+  params.append('page', API_CONFIG.defaultParams.page);
+  params.append('s', API_CONFIG.defaultParams.s);
+  params.append('q', API_CONFIG.defaultParams.q);
+  params.append('json', API_CONFIG.defaultParams.json.toString());
+  params.append('limit', API_CONFIG.defaultParams.limit.toString());
+  params.append('pid', page.toString());
+  
+  if (tags) {
+    params.append('tags', tags);
+  }
 
   const response = await fetch(`${API_CONFIG.baseUrl}?${params}`);
   
