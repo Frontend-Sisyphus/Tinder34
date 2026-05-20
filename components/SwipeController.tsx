@@ -19,7 +19,8 @@ export default function SwipeController ({ tags = '' }: { tags?: string }) {
   const { currentIndex, swipeLeft, swipeRight, undoLastSwipe } = useSwipeStore();
   
   // Получаем все посты из пагинированных данных
-  const allPosts = data?.pages.flatMap(page => page.posts || []) || [];
+  const allPosts = data?.pages[0] || [];
+  console.log(allPosts);
   const currentPost = allPosts[currentIndex];
 
   // Автоматическая подгрузка при приближении к концу
