@@ -1,0 +1,39 @@
+@import "tailwindcss";
+@import "../app/globals.css";
+
+.swipeCard {
+  @apply relative flex justify-center items-start gap-x-[24px]
+         active:cursor-grabbing cursor-grab cursor-grabbing;
+}
+
+.swiperCard-imageContainer {
+  @apply relative w-[420px] h-[520px] bg-transparent overflow-hidden;
+}
+
+.swiperCard-imageContainer img {
+  @apply w-full h-full object-cover transition-transform rounded-[15px] 
+         shadow-2xl hover:shadow-2xl overflow-hidden duration-300;
+}
+
+.swipeCard-tagsContainer {
+  @apply absolute top-0 right-[-304px] flex flex-wrap gap-x-[8px] 
+         gap-y-[6px] max-w-[280px];
+}
+
+.swipeCard-tagsContainer-tag {
+  @apply px-[10px] py-[4px] bg-[linear-gradient(135deg,#667eea_0%,#764ba2_100%)] 
+         rounded-[8px] text-white text-[14px] font-['Fredoka'] font-medium
+         duration-300 ease-in-out;
+}
+
+.swipeCard-tagsContainer-tag:hover {
+  @apply transform-[scale(1.05)];
+}
+
+.nopeHint {
+  @apply absolute top-10 left-8 text-3xl font-bold text-purple opacity-0 group-active:opacity-30 transition-opacity transform -rotate-10 pointer-events-none;
+}
+
+.likeHint {
+  @apply absolute top-10 right-8 text-3xl font-bold text-pink opacity-0 group-active:opacity-30 transition-opacity transform rotate-10 pointer-events-none;
+}
