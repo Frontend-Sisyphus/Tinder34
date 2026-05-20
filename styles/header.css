@@ -1,0 +1,19 @@
+@import "tailwindcss";
+@import "../app/globals.css";
+
+.header {
+  @apply flex justify-center items-center py-[16px];
+}
+
+.header-title {
+  @apply bg-[linear-gradient(42deg,rgba(247,169,183,1)_0%,rgba(166,187,218,1)_30%,rgba(226,221,231,1)_60%,rgba(141,223,254,1)_95%,rgba(85,206,253,1)_100%)] bg-clip-text text-transparent text-[52px] text-center font-['Fredoka'];
+  /* text-shadow:
+    -1px -1px 0 #f7a9b7,  
+     1px -1px 0 #f7a9b7,
+    -1px  1px 0 #f7a9b7,
+     1px  1px 0 #f7a9b7; */
+}
+
+.header-title-number {
+  
+}
