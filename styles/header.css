@@ -2,7 +2,7 @@
 @import "../app/globals.css";
 
 .header {
-  @apply flex justify-center items-center py-[16px];
+  @apply flex justify-center items-center py-[20px];
 }
 
 .header-title {

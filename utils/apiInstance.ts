@@ -1,45 +1,38 @@
 import { ApiResponse } from '@/utils/types/swipeTypes';
 
+import axios from "axios";
+
 const API_CONFIG = {
-  baseUrl: 'https://rule34.xxx/index.php',
+  baseUrl: 'https://api.rule34.xxx/index.php?page=dapi&s=post&q=index&api_key=9a9d453f3b0adb648543aeec40aa141faf147a370f5c8de1e626919360ca9a8935043cbf72730ecdacb2152d8515ca5d97fba020fd12d61774cf24880a82e214&user_id=3623331',
   defaultParams: {
-    page: 'dapi',
-    s: 'post',
-    q: 'index',
     json: 1,
-    limit: 20
+    limit: 1000
   }
 } as const;
 
 export async function fetchPosts(
   page: number = 0, 
   tags: string = ''
-): Promise<ApiResponse> {
-  const params = new URLSearchParams();
-  
-  // Добавляем все параметры
-  params.append('page', API_CONFIG.defaultParams.page);
-  params.append('s', API_CONFIG.defaultParams.s);
-  params.append('q', API_CONFIG.defaultParams.q);
-  params.append('json', API_CONFIG.defaultParams.json.toString());
-  params.append('limit', API_CONFIG.defaultParams.limit.toString());
-  params.append('pid', page.toString());
-  
-  if (tags) {
-    params.append('tags', tags);
+): Promise<any> {
+  try {
+    const response = await axios.get<ApiResponse>(`${API_CONFIG.baseUrl}`, {
+      params: {
+        json: API_CONFIG.defaultParams.json,
+        limit: API_CONFIG.defaultParams.limit,
+        pid: page,
+        ...(tags && { tags })
+      }
+    });
+    
+    if (response.data.success === false) {
+      throw new Error(response.data.message || 'Search is down');
+    }
+    
+    return response.data;
+  } catch (error) {
+    if (axios.isAxiosError(error)) {
+      throw new Error(`HTTP error! status: ${error.response?.status || error.message}`);
+    }
+    throw error;
   }
-
-  const response = await fetch(`${API_CONFIG.baseUrl}?${params}`);
-  
-  if (!response.ok) {
-    throw new Error(`HTTP error! status: ${response.status}`);
-  }
-  
-  const data: ApiResponse = await response.json();
-  
-  if (data.success === false) {
-    throw new Error(data.message || 'Search is down');
-  }
-  
-  return data;
 }
