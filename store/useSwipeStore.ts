@@ -1,163 +1,86 @@
-// stores/useSwipeStore.ts
-
 import { create } from 'zustand';
-import { Post, SwipeStore, SwipeStats } from '@/utils/types/swipeTypes';
-import { fetchPosts } from '@/utils/apiInstance';
+import { Post, SwipeStats } from '@/utils/types/swipeTypes';
 
-const useSwipeStore = create<SwipeStore>((set, get) => ({
-  // Состояние
-  posts: [],
+interface SwipeStoreState {
+  // Состояние свайпов (локальное, не требующее кэширования)
+  currentIndex: number;
+  likedPosts: Set<number>;
+  dislikedPosts: Set<number>;
+  viewedPosts: Set<number>;
+  
+  // Действия
+  swipeLeft: (post: Post) => void;
+  swipeRight: (post: Post) => void;
+  undoLastSwipe: (posts: Post[]) => void;
+  reset: () => void;
+  getStats: () => SwipeStats;
+  isPostLiked: (postId: number) => boolean;
+  isPostDisliked: (postId: number) => boolean;
+}
+
+export const useSwipeStore = create<SwipeStoreState>((set, get) => ({
   currentIndex: 0,
-  currentPage: 0,
-  isLoading: false,
-  error: null,
-  likedPosts: new Set<number>(),
-  dislikedPosts: new Set<number>(),
-  viewedPosts: new Set<number>(),
-  currentTags: '',
+  likedPosts: new Set(),
+  dislikedPosts: new Set(),
+  viewedPosts: new Set(),
 
-  // Инициализация
-  initialize: async (tags: string = ''): Promise<void> => {
-    set({ isLoading: true, error: null, currentTags: tags });
-    
-    try {
-      const data = await fetchPosts(0, tags);
-      set({ 
-        posts: data.posts || [], 
-        currentIndex: 0,
-        currentPage: 0,
-        isLoading: false 
-      });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      set({ 
-        error: errorMessage, 
-        isLoading: false,
-        posts: [],
-        currentIndex: 0
-      });
-    }
+  swipeLeft: (post: Post) => {
+    set((state) => ({
+      dislikedPosts: new Set(state.dislikedPosts).add(post.id),
+      viewedPosts: new Set(state.viewedPosts).add(post.id),
+      currentIndex: state.currentIndex + 1,
+    }));
   },
 
-  // Подгрузка дополнительных постов
-  loadMore: async (): Promise<void> => {
-    const { isLoading, currentPage, viewedPosts, currentTags } = get();
-    
-    if (isLoading) return;
-    
-    set({ isLoading: true });
-    
-    try {
-      const nextPage = currentPage + 1;
-      const data = await fetchPosts(nextPage, currentTags);
-      const newPosts = (data.posts || []).filter(
-        (post: Post) => !viewedPosts.has(post.id)
-      );
-      
-      set((state) => ({
-        posts: [...state.posts, ...newPosts],
-        currentPage: nextPage,
-        isLoading: false
-      }));
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : 'Unknown error occurred';
-      set({ 
-        error: errorMessage, 
-        isLoading: false 
-      });
-    }
+  swipeRight: (post: Post) => {
+    set((state) => ({
+      likedPosts: new Set(state.likedPosts).add(post.id),
+      viewedPosts: new Set(state.viewedPosts).add(post.id),
+      currentIndex: state.currentIndex + 1,
+    }));
   },
 
-  // Получить текущий пост
-  getCurrentPost: (): Post | null => {
-    const { posts, currentIndex } = get();
-    return posts[currentIndex] || null;
-  },
-
-  // Свайп влево (NOPE)
-  swipeLeft: (): Post | null => {
-    const { currentIndex, posts } = get();
-    const currentPost = posts[currentIndex];
-    
-    if (!currentPost) return null;
-    
+  undoLastSwipe: (posts: Post[]) => {
     set((state) => {
-      const newDislikedPosts = new Set(state.dislikedPosts);
-      const newViewedPosts = new Set(state.viewedPosts);
-      newDislikedPosts.add(currentPost.id);
-      newViewedPosts.add(currentPost.id);
+      if (state.currentIndex === 0) return state;
+      
+      const previousPost = posts[state.currentIndex - 1];
+      const newLiked = new Set(state.likedPosts);
+      const newDisliked = new Set(state.dislikedPosts);
+      const newViewed = new Set(state.viewedPosts);
+      
+      newLiked.delete(previousPost.id);
+      newDisliked.delete(previousPost.id);
+      newViewed.delete(previousPost.id);
       
       return {
-        dislikedPosts: newDislikedPosts,
-        viewedPosts: newViewedPosts,
-        currentIndex: state.currentIndex + 1
+        likedPosts: newLiked,
+        dislikedPosts: newDisliked,
+        viewedPosts: newViewed,
+        currentIndex: state.currentIndex - 1,
       };
     });
-    
-    // Автоподгрузка если подходим к концу
-    if (currentIndex >= posts.length - 3) {
-      void get().loadMore();
-    }
-    
-    return get().getCurrentPost();
   },
 
-  // Свайп вправо (LIKE)
-  swipeRight: (): Post | null => {
-    const { currentIndex, posts } = get();
-    const currentPost = posts[currentIndex];
-    
-    if (!currentPost) return null;
-    
-    set((state) => {
-      const newLikedPosts = new Set(state.likedPosts);
-      const newViewedPosts = new Set(state.viewedPosts);
-      newLikedPosts.add(currentPost.id);
-      newViewedPosts.add(currentPost.id);
-      
-      return {
-        likedPosts: newLikedPosts,
-        viewedPosts: newViewedPosts,
-        currentIndex: state.currentIndex + 1
-      };
+  reset: () => {
+    set({
+      currentIndex: 0,
+      likedPosts: new Set(),
+      dislikedPosts: new Set(),
+      viewedPosts: new Set(),
     });
-    
-    // Автоподгрузка если подходим к концу
-    if (currentIndex >= posts.length - 3) {
-      void get().loadMore();
-    }
-    
-    return get().getCurrentPost();
   },
 
-  // Сброс просмотренных постов
-  resetViewedPosts: (): void => {
-    set({ viewedPosts: new Set<number>() });
-  },
-
-  // Проверка, лайкнут ли пост
-  isPostLiked: (postId: number): boolean => {
-    return get().likedPosts.has(postId);
-  },
-
-  // Проверка, дизлайкнут ли пост
-  isPostDisliked: (postId: number): boolean => {
-    return get().dislikedPosts.has(postId);
-  },
-
-  // Получение статистики
-  getStats: (): SwipeStats => {
-    const { likedPosts, dislikedPosts, viewedPosts, posts, currentIndex } = get();
+  getStats: () => {
+    const { likedPosts, dislikedPosts, viewedPosts, currentIndex } = get();
     return {
       totalLikes: likedPosts.size,
       totalDislikes: dislikedPosts.size,
       totalViewed: viewedPosts.size,
-      remainingPosts: posts.length - currentIndex
+      remainingPosts: 0, // Будет вычисляться в компоненте
     };
   },
 
-  // Очистка ошибки
-  clearError: (): void => set({ error: null })
+  isPostLiked: (postId: number) => get().likedPosts.has(postId),
+  isPostDisliked: (postId: number) => get().dislikedPosts.has(postId),
 }));
-
-export default useSwipeStore;

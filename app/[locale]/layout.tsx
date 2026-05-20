@@ -6,6 +6,8 @@ import { NextIntlClientProvider } from 'next-intl';
 
 import { getTranslations } from 'next-intl/server';
 
+import { TanstackProvider } from "../providers/TanstackProvider";
+
 import "../globals.css";
 
 interface PageParams {
@@ -88,7 +90,11 @@ export default function RootLayout({
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
-        <NextIntlClientProvider>{children}</NextIntlClientProvider>
+        <NextIntlClientProvider>
+          <TanstackProvider>
+            {children}
+          </TanstackProvider>
+        </NextIntlClientProvider>
       </body>
     </html>
   );

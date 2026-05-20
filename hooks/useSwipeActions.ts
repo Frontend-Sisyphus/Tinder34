@@ -1,79 +1,72 @@
-// hooks/useSwipeActions.ts
-
-import { useCallback } from 'react';
-
-import useSwipeStore from '@/store/useSwipeStore';
-
+import { useCallback, useMemo } from 'react';
+import SwipeController from '@/components/SwipeController';
+import { useSwipeStore } from '@/store/useSwipeStore';
 import { Post, SwipeStats } from '@/utils/types/swipeTypes';
 
 type SwipeDirection = 'left' | 'right';
 
-interface UseSwipeActionsReturn {
-  // Состояние
-  posts: Post[];
-  currentIndex: number;
-  isLoading: boolean;
-  error: string | null;
-  currentTags: string;
-  
-  // Действия
-  swipeWithAnimation: (direction: SwipeDirection) => Post | null;
-  undoLastSwipe: () => void;
-  resetViewedPosts: () => void;
-  isPostLiked: (postId: number) => boolean;
-  isPostDisliked: (postId: number) => boolean;
-  getStats: () => SwipeStats;
-  clearError: () => void;
-}
-
-export const useSwipeActions = (): UseSwipeActionsReturn => {
+export const useSwipeActions = (tags: string = '') => {
   const {
-    posts,
-    currentIndex,
+    currentPost,
     isLoading,
+    isFetchingNextPage,
     error,
-    currentTags,
-    swipeLeft,
-    swipeRight,
-    resetViewedPosts,
+    allPosts,
+    currentIndex,
+    handleSwipeLeft,
+    handleSwipeRight,
+    handleUndo,
+    refetch,
+  } = SwipeController({ tags });
+
+  const {
     isPostLiked,
     isPostDisliked,
-    getStats,
-    clearError
+    getStats: getStoreStats,
   } = useSwipeStore();
 
   const swipeWithAnimation = useCallback((direction: SwipeDirection): Post | null => {
-    // Здесь можно добавить дополнительную логику перед/после свайпа
-    // Например, аналитику или сохранение в localStorage
+    if (!currentPost) return null;
     
+    // Здесь можно добавить анимацию
     if (direction === 'left') {
-      return swipeLeft();
+      handleSwipeLeft();
     } else {
-      return swipeRight();
+      handleSwipeRight();
     }
-  }, [swipeLeft, swipeRight]);
+    
+    // Отправка аналитики
+    console.log(`Swiped ${direction} on post ${currentPost.id}`);
+    
+    return currentPost;
+  }, [currentPost, handleSwipeLeft, handleSwipeRight]);
 
-  const undoLastSwipe = useCallback((): void => {
-    const state = useSwipeStore.getState();
-    if (state.currentIndex > 0) {
-      useSwipeStore.setState((prevState) => ({
-        currentIndex: prevState.currentIndex - 1
-      }));
-    }
-  }, []);
+  const getStats = useCallback((): SwipeStats => {
+    const storeStats = getStoreStats();
+    return {
+      ...storeStats,
+      remainingPosts: allPosts.length - currentIndex,
+    };
+  }, [allPosts.length, currentIndex, getStoreStats]);
 
   return {
-    posts,
+    // Данные
+    currentPost,
+    allPosts,
     currentIndex,
-    isLoading,
-    error,
-    currentTags,
+    isLoading: isLoading || isFetchingNextPage,
+    error: error?.message || null,
+    hasMore: !!useSwipeActions.length,
+    
+    // Действия
     swipeWithAnimation,
-    undoLastSwipe,
-    resetViewedPosts,
+    undoLastSwipe: handleUndo,
+    reset: () => useSwipeStore.getState().reset(),
+    refetch,
+    
+    // Утилиты
     isPostLiked,
     isPostDisliked,
     getStats,
-    clearError
   };
 };
